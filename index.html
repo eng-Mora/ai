@@ -243,7 +243,7 @@ td.num-cell{width:44px; color:var(--fg-dim); font-weight:700}
 .login-wrap{min-height:80vh;display:grid;place-items:center}
 .login-card{width:min(360px,92vw);display:grid;gap:14px;text-align:center}
 td input.note-in{width:100%;min-width:150px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-body.ro #fullDayBtn,body.ro #debtUpBtn,body.ro #addClientLedger,body.ro #carryBtn,body.ro #upCollBtnL,body.ro #amanUpBtn,body.ro #drawUpBtn,body.ro #cashUpBtn,body.ro #zeroBtnL,body.ro #delDayBtn,body.ro #moveDayBtn,body.ro #expBtnL,body.ro #repFilter,body.ro #sRep,body.ro [data-editc]{display:none!important}
+body.ro #fullDayBtn,body.ro #debtUpBtn,body.ro #addClientLedger,body.ro #carryBtn,body.ro #upCollBtnL,body.ro #amanUpBtn,body.ro #drawUpBtn,body.ro #cashUpBtn,body.ro #zeroBtnL,body.ro #delDayBtn,body.ro #moveDayBtn,body.ro #lockDayBtn,body.ro #expBtnL,body.ro #repFilter,body.ro #sRep,body.ro [data-editc]{display:none!important}
 /* ---- استكمال البيانات ---- */
 .cmp-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:12px}
 .cmp-card{padding:14px; display:flex; flex-direction:column; gap:10px; transition:background .2s,border-color .2s}
@@ -536,6 +536,19 @@ td.neg{color:var(--danger)} td.pos{color:var(--good)}
 .pal-sw{display:inline-flex;flex:0 0 auto;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,.12)}
 .pal-sw i{display:block;width:22px;height:30px}
 </style>
+<style id="audit-lock-css">
+.lock-banner{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:11px 14px;border-radius:12px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.lock-banner .lb-ico{font-size:20px}
+.lock-banner .lb-txt{flex:1;font-size:13.5px;line-height:1.6}
+.lock-banner .lb-txt small{display:block;opacity:.85;font-size:12px}
+.tile.locked{background:var(--warn-soft);color:var(--warn)}
+.au-table td{vertical-align:top;font-size:13px}
+.au-table .au-det{min-width:280px;line-height:1.7}
+.au-old{color:var(--fg-dim);text-decoration:line-through;text-decoration-thickness:1px}
+.au-new{color:var(--accent)}
+.au-sub{font-size:11.5px;color:var(--fg-dim);margin-top:2px}
+.au-det details summary{cursor:pointer;color:var(--accent);font-size:12.5px}
+</style>
 <style id="auth-save-css">
 .save-bar{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:80; display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; padding:9px 12px; border-radius:14px; background:var(--surface); color:var(--fg); border:1.5px solid #d9a441; box-shadow:0 14px 34px -14px rgba(0,0,0,.45); max-width:94vw; font-size:13.5px}
 .save-bar[hidden]{display:none}
@@ -543,6 +556,48 @@ td.neg{color:var(--danger)} td.pos{color:var(--good)}
 input.cell-amt.dirty{border-color:#d9a441!important; background:color-mix(in srgb,#e0a73a 20%,var(--surface))!important}
 input.cell-amt.saved-flash{border-color:var(--good)!important; background:color-mix(in srgb,var(--good) 18%,var(--surface))!important; transition:background .4s}
 </style>
+<style id="mobile-ledger-css">
+@media (max-width:760px){
+  /* شريط التبويبات: سكرول أفقي بدل ما التبويبات تتحشر فوق بعض */
+  .rail{width:auto!important; inset-inline:0!important; border-inline-start:0; flex-direction:row!important; justify-content:flex-start; overflow-x:auto; overflow-y:hidden; gap:2px; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{display:none}
+  .rail .tab-btn{flex:0 0 auto; width:auto; min-width:64px; padding:6px 10px}
+  /* اليومية: كل عميل كارت بدل جدول 13 عمود */
+  .ledger-body .tablewrap{border:0; box-shadow:none; background:transparent; overflow:visible; contain:none; max-height:none}
+  .ledger-table, .ledger-table tbody{display:block; width:100%}
+  .ledger-table thead, .ledger-table tfoot{display:none}
+  .ledger-table tbody tr{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px 8px; padding:12px; margin:0 0 10px; background:var(--surface); border:1px solid var(--border); border-radius:14px}
+  .ledger-table tbody tr.sel{background:var(--warn-soft); border-color:var(--warn)}
+  .ledger-table tbody tr td{display:block; padding:0!important; border:0!important; background:transparent!important; box-shadow:none!important; position:static!important; width:auto!important; min-width:0!important; text-align:start!important; font-size:14px}
+  .ledger-table tbody td:nth-child(1){grid-column:span 1; align-self:center; text-align:center!important; font-weight:800; color:var(--fg-dim)}
+  .ledger-table tbody td:nth-child(2){grid-column:span 5; font-size:15.5px; font-weight:700}
+  .ledger-table tbody td:nth-child(3){grid-column:1/-1}
+  .ledger-table tbody td:nth-child(3):empty{display:none}
+  .ledger-table tbody td:nth-child(n+4):nth-child(-n+12){grid-column:span 2}
+  .ledger-table tbody td:nth-child(13){grid-column:span 4}
+  .ledger-table tbody td:nth-child(14){grid-column:span 2; align-self:end}
+  .ledger-table tbody td:nth-child(n+4):nth-child(-n+13)::before{display:block; font-size:11.5px; font-weight:600; color:var(--fg-dim); margin-bottom:3px; white-space:nowrap}
+  .ledger-table tbody td:nth-child(4)::before{content:"فوري"}
+  .ledger-table tbody td:nth-child(5)::before{content:"امان"}
+  .ledger-table tbody td:nth-child(6)::before{content:"مصاري"}
+  .ledger-table tbody td:nth-child(7)::before{content:"ممكن"}
+  .ledger-table tbody td:nth-child(8)::before{content:"بساطة"}
+  .ledger-table tbody td:nth-child(9)::before{content:"كاش"}
+  .ledger-table tbody td:nth-child(10)::before{content:"إجمالي المسحوبات"}
+  .ledger-table tbody td:nth-child(11)::before{content:"التحصيل"}
+  .ledger-table tbody td:nth-child(12)::before{content:"آجل أمس"}
+  .ledger-table tbody td:nth-child(13)::before{content:"المديونية الجديدة"}
+  .ledger-table tbody td.readonly, .ledger-table tbody td:nth-child(13){font-weight:800; font-size:16px}
+  .ledger-table td input.cell-amt{width:100%; max-width:none; min-width:0; height:42px; font-size:16px; padding:6px 8px; text-align:center}
+  .ledger-table td .btn.sm{width:100%}
+  /* شريط الإجماليات: بعد القايمة بدل ما يغطي الصفوف */
+  .tot-strip{position:static!important; display:block; margin-top:6px}
+  .tot-title{margin-bottom:8px}
+  .tot-items{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; overflow:visible}
+  .tot-item{min-width:0}
+}
+</style>
+
 <style id="ux-css">
 @media (min-width:761px){
   .ledger-body .tablewrap{max-height:calc(100vh - 260px); overflow:auto}
@@ -745,7 +800,7 @@ function detachAll(){
 }
 
 function resetData(){
-  Object.assign(state, {clients:{}, suppliers:{}, cashOps:{}, reps:{}, users:{}, repNotes:{}, dataComp:{}, alerts:{}, alertsLoaded:false, alertsPopupShown:false, dayData:{}, myProfile:undefined, _repBound:false, noAccess:false});
+  Object.assign(state, {locks:{}, clients:{}, suppliers:{}, cashOps:{}, reps:{}, users:{}, repNotes:{}, dataComp:{}, alerts:{}, alertsLoaded:false, alertsPopupShown:false, dayData:{}, myProfile:undefined, _repBound:false, noAccess:false});
   if(state._dayOff){ try{ state._dayOff(); }catch(e){} state._dayOff = null; }
   state.pend = {}; if(typeof refreshSaveBar==='function') refreshSaveBar();
 }
@@ -758,11 +813,12 @@ function bindPath(path, key, transform){
   ref.on('value', cb, err=>{ state.connected=false; renderConnDot(); toast('تعذر قراءة '+path+': '+err.message); });
   state.listeners.push(()=>ref.off('value', cb));
 }
-function bindStaffData(){ bindPath('clients','clients'); bindPath('reps','reps'); bindPath('repNotes','repNotes'); bindDay(state.day); }
+function bindStaffData(){ bindPath('clients','clients'); bindPath('reps','reps'); bindPath('repNotes','repNotes'); bindLocks(); bindDay(state.day); }
 function bindAdminData(){
   bindPath('clients','clients'); bindPath('suppliers','suppliers'); bindPath('cashOps','cashOps'); bindPath('reps','reps');
   bindPath('users','users'); bindPath('repNotes','repNotes'); bindPath('dataCompletion','dataComp');
   bindPath('alerts','alerts', v=>{ state.alertsLoaded = true; return v || {}; });
+  bindLocks();
   bindDay(state.day);
 }
 function bindRepProfile(uid){
@@ -850,6 +906,7 @@ const ICONS = {
 };
 
 ICONS.bell = '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+ICONS.history = '<path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4h4M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
 ICONS.clip = '<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 4h6v3H9zM9 14l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
 
 function renderRail(){
@@ -887,7 +944,7 @@ function render(){
   const ok = allowedTabs().map(t=>t.id); if(!ok.includes(state.tab)) state.tab = ok[0] || 'ledger';
   renderRail(); renderConnDot();
   const R = {ledger:renderLedger, search:renderSearch, clients:renderClients, reps:renderReps, suppliers:renderSuppliers,
-             cash:renderCash, import:renderImport, settings:renderSettings, notes:renderNotes, users:renderUsers, complete:renderComplete, alerts:renderAlerts};
+             cash:renderCash, import:renderImport, settings:renderSettings, notes:renderNotes, users:renderUsers, complete:renderComplete, alerts:renderAlerts, audit:renderAudit};
   main.classList.toggle('wide', state.tab==='ledger');
   if(R[state.tab]) R[state.tab](main);
   applyRoleUI(main);
@@ -982,6 +1039,7 @@ function renderLedger(main){
         <section class="sp-group">
           <div class="sp-title">إدارة اليوم</div>
           <div class="tile-grid">
+            <button class="tile ${isLocked(state.day)?'locked':''}" id="lockDayBtn" title="قفل اليوم ضد أي تعديل أو رفع أو تصفير (الأدمن بس يفتحه)"><i>${isLocked(state.day)?'🔓':'🔒'}</i><span>${isLocked(state.day)?'فتح اليوم':'قفل اليوم'}</span></button>
             <button class="tile" id="expBtnL"><i>⬇</i><span>تصدير</span></button>
             <button class="tile" id="moveDayBtn" title="نقل بيانات اليوم ده ليوم تاني (أي تاريخ) وتصفير اليوم الحالي"><i>⇄</i><span>نقل اليوم</span></button>
             <button class="tile danger" id="zeroBtnL"><i>⌀</i><span>تصفير</span></button>
@@ -1002,6 +1060,7 @@ function renderLedger(main){
       </div>
     </aside>
     <div class="ledger-body">
+    ${lockBannerHtml()}
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:16px">
       <div class="stat"><div class="label">إجمالي التحصيل</div><div class="val tnum">${fmt(totalColl)} <small>ج.م</small></div></div>
       <div class="stat"><div class="label">إجمالي المسحوبات</div><div class="val tnum">${fmt(totalDrawn)} <small>ج.م</small></div></div>
@@ -1081,9 +1140,10 @@ function renderLedger(main){
   $('#amanUpBtn').onclick = ()=>{ if(editLockBlock('aman','امان')) return; openAmanUpload(); };
   $('#drawUpBtn').onclick = ()=>{ const f=state.editField; if(f && !MACHINE_TYPES.some(x=>x[0]===f)) return toast('التعديلات مفعّلة على «'+editFieldLabel(f)+'» بس — سحب المكن مقفول'); openDrawUpload(); };
   $('#cashUpBtn').onclick = ()=>{ if(editLockBlock('cash','الكاش')) return; openCashUpload(); };
-  $('#zeroBtnL').onclick = ()=>{ if(editLockAny('التصفير')) return; openZeroModal(repF); };
-  $('#delDayBtn').onclick = ()=>{ if(editLockAny('حذف اليوم')) return; deleteDay(); };
-  $('#moveDayBtn').onclick = ()=>{ if(editLockAny('نقل اليوم')) return; openMoveDay(); };
+  $('#zeroBtnL').onclick = ()=>{ if(dayLockBlock('التصفير') || editLockAny('التصفير')) return; openZeroModal(repF); };
+  $('#delDayBtn').onclick = ()=>{ if(dayLockBlock('حذف اليوم') || editLockAny('حذف اليوم')) return; deleteDay(); };
+  $('#moveDayBtn').onclick = ()=>{ if(dayLockBlock('نقل اليوم') || editLockAny('نقل اليوم')) return; openMoveDay(); };
+  { const lb = $('#lockDayBtn'); if(lb) lb.onclick = ()=>toggleDayLock(); const ub = $('#unlockDayBtn'); if(ub) ub.onclick = ()=>toggleDayLock(); }
   $('#editLock').onchange = e=>setEditField(e.target.value);
   bindCopyFmt();
   $$('[data-copyrow]').forEach(b=>b.onclick = ()=>{
@@ -1139,7 +1199,7 @@ const editFieldLabel = k => (EDIT_FIELDS.find(x=>x[0]===k)||[0,k||''])[1];
 function applyEditLock(){
   const f = state.editField || '';
   $$('input.cell-amt[data-field], input[data-sfield]').forEach(inp=>{
-    const on = !f || (inp.dataset.field||inp.dataset.sfield)===f, td = inp.closest('td');
+    const on = !isLocked(inp.dataset.sdate || state.day) && (!f || (inp.dataset.field||inp.dataset.sfield)===f), td = inp.closest('td');
     inp.disabled = !on;
     if(td){ td.classList.toggle('lock-off', !on); td.classList.toggle('lock-on', !!f && on); }
   });
@@ -5115,7 +5175,7 @@ function resolveUser(){
 }
 function allowedTabs(){
   const u = state.user;
-  if(u.role==='admin') return [...TABS, {id:'complete',label:'استكمال',title:'استكمال البيانات',icon:'clip'}, {id:'alerts',label:'الإشعارات',icon:'bell'}, {id:'notes',label:'الملحوظات',icon:'book'}, {id:'users',label:'المستخدمين',icon:'users'}];
+  if(u.role==='admin') return [...TABS, {id:'complete',label:'استكمال',title:'استكمال البيانات',icon:'clip'}, {id:'alerts',label:'الإشعارات',icon:'bell'}, {id:'notes',label:'الملحوظات',icon:'book'}, {id:'audit',label:'السجل',title:'سجل التعديلات',icon:'history'}, {id:'users',label:'المستخدمين',icon:'users'}];
   return TABS.filter(t=>(t.id==='ledger'||t.id==='search') && u.perms.tabs[t.id]);
 }
 function renderLogin(main){
@@ -5820,7 +5880,10 @@ function rulesText(adminUid){
   return JSON.stringify({rules:{
     ".read": false, ".write": false,
     "users": {".read": A, ".write": A, "$uid": {".read": `auth.uid === $uid || ${A}`}},
-    "clients": staffRead, "reps": staffRead, "days": staffRead,
+    "clients": staffRead, "reps": staffRead,
+    "days": {".read": S, "$date": {".write": `${A} && !root.child('locks').child($date).exists()`}},
+    "locks": {".read": S, ".write": A},
+    "audit": {".read": A, "$id": {".write": `${A} && !data.exists() && newData.child('uid').val() === auth.uid && newData.child('at').val() === now`, ".validate": "newData.hasChildren(['uid','at','k'])"}},
     "repNotes": {".read": S, ".write": S},
     "suppliers": {".read": A, ".write": A}, "cashOps": {".read": A, ".write": A},
     "dataCompletion": {".read": A, ".write": A}, "alerts": {".read": A, ".write": A},
@@ -5837,8 +5900,8 @@ function renderAdminExtras(main){
       <button class="btn primary" id="bkFull">نزّل نسخة كاملة (JSON)</button>
       <div id="bkList" style="margin-top:14px;font-size:13px;color:var(--fg-dim)">جاري تحميل النسخ التلقائية…</div></div>
     <div class="card pad" style="max-width:560px;margin-top:16px"><h3 style="margin:0 0 6px">قواعد الأمان (Rules)</h3>
-      <div style="font-size:12.5px;color:var(--fg-dim);margin-bottom:8px">الحماية الحقيقية بتتحدد هنا: Firebase Console ← Realtime Database ← Rules ← الصق القواعد دي ← Publish. فيها الـ UID بتاعك جاهز (${escapeHtml(state.user.uid)}).</div>
-      <textarea id="rulesTxt" dir="ltr" readonly style="width:100%;height:220px;font-family:monospace;font-size:12px;border-radius:10px;border:1px solid var(--border);padding:8px;background:var(--bg);color:var(--fg)">${escapeHtml(rulesText(state.user.uid))}</textarea>
+      <div style="font-size:12.5px;color:var(--fg-dim);margin-bottom:8px"><b>القواعد اتحدّثت</b> (قفل الأيام + سجل التعديلات) — لازم تنسخها وتنشرها عشان القفل يتطبّق على السيرفر نفسه مش على الشاشة بس. الحماية الحقيقية بتتحدد هنا: Firebase Console ← Realtime Database ← Rules ← الصق القواعد دي ← Publish. فيها الـ UID بتاعك جاهز (${escapeHtml(state.user.uid)}).</div>
+      <textarea id="rulesTxt" dir="ltr" readonly style="width:100%;height:340px;font-family:monospace;font-size:12px;border-radius:10px;border:1px solid var(--border);padding:8px;background:var(--bg);color:var(--fg)">${escapeHtml(rulesText(state.user.uid))}</textarea>
       <div style="margin-top:8px"><button class="btn" id="rulesCopy">نسخ القواعد</button></div></div>`);
   $('#bkFull').onclick = e=>downloadFullBackup(e.target);
   $('#rulesCopy').onclick = ()=>{ const t = $('#rulesTxt'); t.select(); try{ document.execCommand('copy'); toast('اتنسخت ✓'); }catch(e){ toast('انسخها يدوي'); } };
@@ -5950,8 +6013,320 @@ function askPrompt(text, def){
   });
 }
 
+/* ================= قفل الأيام + سجل التعديلات =================
+   - قفل اليوم: node اسمه locks/<التاريخ>. أي كتابة على days/<التاريخ> بتتمنع من الواجهة، وكمان من قواعد Firebase (لازم تنسخ القواعد الجديدة من الإعدادات).
+   - سجل التعديلات: node اسمه audit (إضافة فقط). كل كتابة على الأيام/العملاء/الموردين/الكاش بتتسجل بعد ما السيرفر يأكد الحفظ.
+   - مفيش حاجة هنا بتغيّر طريقة الكتابة الأصلية: بنلفّ set/update/remove بس، والكتابة نفسها بتتم زي ما هي. */
+const AUDIT_FAMS = {days:'days', clients:'client', suppliers:'supplier', cashOps:'cash'};
+const AUDIT_MAXCH = 40;
+state.locks = state.locks || {};
+const isLocked = d => !!(d && state.locks && state.locks[d]);
+
+function bindLocks(){
+  const ref = state.db.ref('locks');
+  const cb = snap => { state.locks = snap.val() || {}; scheduleRender(); };
+  ref.on('value', cb, ()=>{ state.locksUnavailable = true; });   // لو القواعد لسه متحدّثتش مبنزعجش المستخدم
+  state.listeners.push(()=>ref.off('value', cb));
+}
+
+function auditRelPath(ref){
+  const root = state.db.ref().toString().replace(/\/$/,'');
+  return decodeURIComponent(ref.toString().slice(root.length)).replace(/^\//,'');
+}
+/* كل المسارات اللي الكتابة دي هتلمسها: [{p, v}] */
+function auditOps(base, m, a){
+  if(m==='remove') return [{p:base, v:null}];
+  if(m==='set') return [{p:base, v:a[0]}];
+  if(m==='update' && a[0] && typeof a[0]==='object') return Object.keys(a[0]).map(k=>({p: base ? base+'/'+k : k, v:a[0][k]}));
+  return [];
+}
+function auditLeaves(p, v, out){
+  if(out.length > 6000) return out;
+  if(v && typeof v==='object' && !('.sv' in v)){
+    const ks = Object.keys(v);
+    if(!ks.length){ out.push({p, v:null}); return out; }
+    ks.forEach(k=>auditLeaves(p+'/'+k, v[k], out));
+    return out;
+  }
+  out.push({p, v: (v && typeof v==='object') ? null : v}); return out;
+}
+function auditDig(node, parts){
+  for(const k of parts){ if(node==null || typeof node!=='object') return undefined; node = node[k]; }
+  return node;
+}
+function auditDayNode(date){
+  if(date===state.day) return {known:true, node: state.dayData || {}};
+  if(typeof ss!=='undefined' && ss && ss.allDays && ss.allDays[date]) return {known:true, node: ss.allDays[date]};
+  return {known:false};
+}
+function auditClientName(id){ const c = state.clients && state.clients[id]; return (c && c.name) || ''; }
+const auditShort = v => (typeof v==='string' && v.length>120) ? v.slice(0,120)+'…' : v;
+
+/* هل الكتابة دي هتمس يوم مقفول؟ بترجّع تاريخ اليوم المقفول (أو '') */
+function lockedHit(base, m, a){
+  if(!state.locks) return '';
+  const paths = auditOps(base, m, a).map(o=>o.p);
+  if(!paths.length) paths.push(base);
+  for(const p of paths){
+    const parts = p.split('/');
+    if(parts[0]!=='days') continue;
+    if(parts.length===1){ const k = Object.keys(state.locks)[0]; if(k) return k; continue; }
+    if(isLocked(parts[1])) return parts[1];
+  }
+  return '';
+}
+
+function auditBuild(base, m, a, u){
+  const ops = auditOps(base, m, a);
+  const entries = [];
+  const head = ()=>{ const h = {uid:u.uid, by:u.name||'', clientAt:Date.now()}; if(state._auditCtx) h.ctx = state._auditCtx; return h; };
+  const cells = [], dayDel = new Set(), rowDel = [];
+  const others = {};   // fam -> {ch:[], del:[]}
+  ops.forEach(op=>{
+    const first = op.p.split('/')[0];
+    if(first==='locks'){
+      const parts = op.p.split('/'); if(parts.length!==2) return;
+      const date = parts[1], v = op.v;
+      if(v===null){
+        const prev = state.locks && state.locks[date];
+        const e = Object.assign(head(), {k:'unlock', date, reason: state._unlockReason||''});
+        if(prev){ e.prevBy = prev.byName||''; if(prev.tot) e.tot = prev.tot; }
+        entries.push(e);
+      } else {
+        const e = Object.assign(head(), {k:'lock', date}); if(v && v.tot) e.tot = v.tot; entries.push(e);
+      }
+      return;
+    }
+    if(!AUDIT_FAMS[first]) return;
+    auditLeaves(op.p, op.v, []).forEach(l=>{
+      const parts = l.p.split('/');
+      if(first==='days'){
+        if(parts.length===2 && l.v===null){ dayDel.add(parts[1]); return; }
+        if(parts.length===3 && l.v===null){ rowDel.push({d:parts[1], c:parts[2]}); return; }
+        if(parts.length<4) return;
+        const d = parts[1], c = parts[2], f = parts.slice(3).join('/');
+        const od = auditDayNode(d);
+        const o = od.known ? auditDig(od.node, [c].concat(parts.slice(3))) : undefined;
+        if(od.known && Math.abs((Number(o)||0)-(Number(l.v)||0))<1e-9) return;   // مفيش تغيير فعلي
+        const ch = {d, c, cn:auditClientName(c), f, v:auditShort(l.v)};
+        if(od.known) ch.o = auditShort(o===undefined ? 0 : o);
+        cells.push(ch);
+      } else {
+        const id = parts[1], f = parts.slice(2).join('/');
+        const bucket = others[first] = others[first] || {ch:[], del:[]};
+        const src = state[first] || {};
+        if(parts.length===2 && l.v===null){ const old = src[id]; bucket.del.push({id, n:(old&&old.name)||auditClientName(id)}); return; }
+        if(f==='order' || f==='createdAt' || f==='updatedAt') return;   // ضوضاء: ترتيب العملاء وبصمات الوقت
+        const o = auditDig(src[id], parts.slice(2));
+        if(o===l.v || (o==null && l.v==null) || (typeof o==='number' && typeof l.v==='number' && Math.abs(o-l.v)<1e-9)) return;
+        const nm = (src[id] && src[id].name) || '';
+        const ch = {id, n:nm, f, v:auditShort(l.v)}; if(o!==undefined) ch.o = auditShort(o);
+        bucket.ch.push(ch);
+      }
+    });
+  });
+  /* خلايا اليوميات */
+  if(cells.length){
+    const dates = [...new Set(cells.map(x=>x.d))];
+    const e = Object.assign(head(), {k: cells.length>AUDIT_MAXCH ? 'bulk' : 'edit', n:cells.length, dates});
+    if(dates.length===1) e.date = dates[0];
+    e.ch = cells.slice(0, cells.length>AUDIT_MAXCH ? 15 : AUDIT_MAXCH);
+    entries.push(e);
+  }
+  dayDel.forEach(date=>{
+    const od = auditDayNode(date), e = Object.assign(head(), {k:'day-delete', date});
+    if(od.known){
+      let drawn=0, coll=0, debt=0, rows=0;
+      Object.keys(od.node).forEach(id=>{ const r=od.node[id]||{}; rows++;
+        drawn += ['fawry','aman','masary','mumkin','basata','cash'].reduce((s,k)=>s+(Number(r[k])||0),0);
+        coll += Number(r.collection)||0; debt += Number(r.debtYesterday)||0; });
+      e.rows = rows; e.tot = {drawn:Math.round(drawn*100)/100, collection:Math.round(coll*100)/100, debtYesterday:Math.round(debt*100)/100};
+    }
+    entries.push(e);
+  });
+  if(rowDel.length){
+    const dates = [...new Set(rowDel.map(x=>x.d))];
+    entries.push(Object.assign(head(), {k:'row-delete', n:rowDel.length, dates, ch: rowDel.slice(0,AUDIT_MAXCH).map(x=>({d:x.d, c:x.c, cn:auditClientName(x.c)}))}));
+  }
+  Object.keys(others).forEach(fam=>{
+    const b = others[fam];
+    if(b.ch.length) entries.push(Object.assign(head(), {k:AUDIT_FAMS[fam], n:b.ch.length, ch:b.ch.slice(0,AUDIT_MAXCH)}));
+    if(b.del.length) entries.push(Object.assign(head(), {k:AUDIT_FAMS[fam]+'-delete', n:b.del.length, ch:b.del.slice(0,AUDIT_MAXCH)}));
+  });
+  return entries.map(e=>JSON.parse(JSON.stringify(e)));   // يشيل أي undefined
+}
+
+function auditSend(e){
+  try{
+    const ref = state.db.ref('audit').push();
+    ref.set(Object.assign({at: firebase.database.ServerValue.TIMESTAMP}, e)).catch(()=>{
+      if(!auditSend._warned){ auditSend._warned = true; toast('⚠ سجل التعديلات مش بيتحفظ — انسخ القواعد الجديدة من الإعدادات وانشرها في Firebase'); }
+    });
+  }catch(err){}
+}
+
+function installAudit(){
+  try{
+    const P = firebase.database.Reference.prototype;
+    ['set','update','remove'].forEach(m=>{
+      const orig = P[m];
+      P[m] = function(...a){
+        const u = state.user;
+        if(!u || u.role==='rep' || !state.db) return orig.apply(this, a);
+        let entries = [];
+        try{
+          const base = auditRelPath(this);
+          const hit = lockedHit(base, m, a);
+          if(hit){
+            const msg = 'يوم '+hit+' مقفول — افتحه الأول (زرار «فتح اليوم» في اليومية)';
+            toast(msg);
+            return Promise.reject(Object.assign(new Error(msg), {code:'day-locked'}));
+          }
+          entries = auditBuild(base, m, a, u);
+        }catch(err){ entries = []; }
+        const r = orig.apply(this, a);
+        if(entries.length && r && typeof r.then==='function') r.then(()=>entries.forEach(auditSend), ()=>{});
+        return r;
+      };
+    });
+    /* اسم العملية اللي بتتكتب في السجل (best effort) */
+    const CTX = {saveAllPending:'تعديل يدوي', mvApply:'نقل يوم', mvUndo:'تراجع عن نقل يوم', applyCarryPlan:'ترحيل المديونية', carryDebtForward:'ترحيل المديونية',
+      undoCarry:'تراجع عن ترحيل', runImport:'استيراد إكسيل', mchApply:'رفع مكن', mchUndo:'تراجع عن رفع مكن', csApply:'رفع كاش', csUndo:'تراجع عن رفع كاش',
+      amApply:'رفع مكن امان', dwApply:'سحب مكن', upApply:'رفع تحصيل', upUndo:'تراجع عن رفع تحصيل', zApply:'تصفير', zUndo:'تراجع عن تصفير',
+      fdApply:'رفع يومية كاملة', fdUndo:'تراجع عن رفع يومية', dbtApply:'رفع مديونية', dbtUndo:'تراجع عن رفع مديونية', deleteDay:'حذف يوم'};
+    Object.keys(CTX).forEach(name=>{
+      const f = window[name]; if(typeof f!=='function') return;
+      window[name] = function(...a){
+        const prev = state._auditCtx; state._auditCtx = CTX[name];
+        let r; try{ r = f.apply(this, a); }catch(e){ state._auditCtx = prev; throw e; }
+        if(r && typeof r.then==='function') return r.finally(()=>{ state._auditCtx = prev; });
+        state._auditCtx = prev; return r;
+      };
+    });
+  }catch(e){}
+}
+
+/* ---------- واجهة القفل ---------- */
+function dayTotals(){
+  const d = state.dayData || {}; let drawn=0, coll=0, nd=0, n=0;
+  Object.keys(d).forEach(id=>{ const r = d[id]||{}; n++;
+    drawn += ['fawry','aman','masary','mumkin','basata','cash'].reduce((s,k)=>s+(Number(r[k])||0),0);
+    coll += Number(r.collection)||0; nd += computeNewDebt(r); });
+  const q = x=>Math.round(x*100)/100;
+  return {drawn:q(drawn), collection:q(coll), newDebt:q(nd), n};
+}
+function lockBannerHtml(){
+  const date = state.day, L = state.locks && state.locks[date];
+  if(!L) return '';
+  const admin = state.user && state.user.role==='admin';
+  const when = L.at ? new Date(L.at).toLocaleString('ar-EG',{dateStyle:'medium', timeStyle:'short'}) : '';
+  const t = L.tot ? ` · مسحوبات ${fmt(L.tot.drawn)} · تحصيل ${fmt(L.tot.collection)} · مديونية ${fmt(L.tot.newDebt)}` : '';
+  return `<div class="lock-banner"><span class="lb-ico">🔒</span><div class="lb-txt"><b>يوم ${escapeHtml(date)} مقفول</b> — مفيش تعديل ولا رفع ولا تصفير ولا حذف ولا نقل عليه.<small>${L.byName?'اتقفل بواسطة '+escapeHtml(L.byName)+' · ':''}${escapeHtml(when)}${escapeHtml(t)}</small></div>${admin?'<button class="btn sm" id="unlockDayBtn">فتح اليوم</button>':''}</div>`;
+}
+async function toggleDayLock(){
+  const u = state.user;
+  if(!state.db) return toast('مش متصل بقاعدة البيانات');
+  if(!u || u.role!=='admin') return toast('قفل وفتح الأيام للأدمن بس');
+  const date = state.day;
+  const denied = e=>toast('خطأ: '+e.message+(/permission/i.test((e.code||'')+' '+e.message)?' — انسخ القواعد الجديدة من الإعدادات وانشرها في Firebase الأول':''));
+  if(isLocked(date)){
+    const reason = await askPrompt('سبب فتح يوم '+date+'؟ (بيتسجّل في سجل التعديلات)');
+    if(reason===null || !String(reason).trim()) return toast('لازم تكتب سبب الفتح');
+    state._unlockReason = String(reason).trim();
+    state.db.ref('locks/'+date).remove().then(()=>toast('اتفتح يوم '+date)).catch(denied).finally(()=>{ state._unlockReason = ''; });
+    return;
+  }
+  guardPending(async ()=>{
+    const t = dayTotals();
+    const msg = `هتقفل يوم ${date} (${t.n} عميل).\n\nالمسحوبات: ${fmt(t.drawn)}\nالتحصيل: ${fmt(t.collection)}\nالمديونية الجديدة: ${fmt(t.newDebt)}\n\nبعد القفل مفيش تعديل ولا رفع ولا تصفير ولا حذف ولا نقل على اليوم ده، والأرقام دي بتتسجّل كبصمة. الأدمن بس يقدر يفتحه (وبسبب).\n\nتقفل؟`;
+    if(!await askConfirm(msg)) return;
+    state.db.ref('locks/'+date).set({at: firebase.database.ServerValue.TIMESTAMP, by:u.uid, byName:u.name||'', tot:{drawn:t.drawn, collection:t.collection, newDebt:t.newDebt, n:t.n}})
+      .then(()=>toast('اتقفل يوم '+date+' 🔒')).catch(denied);
+  });
+}
+
+/* ---------- تبويب السجل ---------- */
+const auditUI = {items:[], limit:300, loaded:false, loading:false, f:{q:'', kind:'', date:''}};
+const AUDIT_KINDS = {edit:'تعديل', bulk:'عملية جماعية', 'day-delete':'حذف يوم', 'row-delete':'حذف سطر', lock:'قفل يوم', unlock:'فتح يوم',
+  client:'عميل', 'client-delete':'حذف عميل', supplier:'مورد', 'supplier-delete':'حذف مورد', cash:'كاش', 'cash-delete':'حذف كاش'};
+function auditKindClass(k){ return /delete|unlock/.test(k) ? 'danger' : (k==='lock' ? 'good' : (k==='bulk' ? 'warn' : 'neutral')); }
+function auditLoad(){
+  if(!state.db || auditUI.loading) return; auditUI.loading = true;
+  state.db.ref('audit').orderByKey().limitToLast(auditUI.limit).once('value').then(s=>{
+    const v = s.val() || {};
+    auditUI.items = Object.keys(v).sort().reverse().map(id=>Object.assign({id}, v[id]));
+    auditUI.loaded = true; auditUI.loading = false; auditUI.err = '';
+    if(state.tab==='audit') renderAudit($('#main'));
+  }).catch(e=>{ auditUI.loading = false; auditUI.loaded = true; auditUI.err = e.message; if(state.tab==='audit') renderAudit($('#main')); });
+}
+function auditVal(v){ return (typeof v==='number') ? fmt(v) : (v==null||v==='' ? '—' : escapeHtml(String(v))); }
+function auditDetail(e){
+  const ch = e.ch || [];
+  const line = c=>{
+    if(c.f!==undefined && c.c!==undefined) return `<div><b>${escapeHtml(c.cn||'—')}</b> · ${escapeHtml(editFieldLabel(c.f))}: <span class="au-old">${c.o===undefined?'؟':auditVal(c.o)}</span> ← <b class="au-new">${auditVal(c.v)}</b>${e.dates&&e.dates.length>1?` <small>(${escapeHtml(c.d)})</small>`:''}</div>`;
+    if(c.f!==undefined) return `<div><b>${escapeHtml(c.n||'—')}</b> · ${escapeHtml(c.f)}: <span class="au-old">${c.o===undefined?'—':auditVal(c.o)}</span> ← <b class="au-new">${auditVal(c.v)}</b></div>`;
+    return `<div><b>${escapeHtml(c.cn||c.n||'—')}</b>${c.d?` <small>(${escapeHtml(c.d)})</small>`:''}</div>`;
+  };
+  const tot = t=> t ? `<div class="au-sub">مسحوبات ${fmt(t.drawn)} · تحصيل ${fmt(t.collection)}${t.newDebt!==undefined?' · مديونية '+fmt(t.newDebt):''}${t.debtYesterday!==undefined?' · آجل أمس '+fmt(t.debtYesterday):''}</div>` : '';
+  switch(e.k){
+    case 'lock': return `قفل يوم <b>${escapeHtml(e.date)}</b>${tot(e.tot)}`;
+    case 'unlock': return `فتح يوم <b>${escapeHtml(e.date)}</b> — السبب: ${escapeHtml(e.reason||'—')}${tot(e.tot)}`;
+    case 'day-delete': return `حذف يوم <b>${escapeHtml(e.date)}</b> بالكامل${e.rows!==undefined?' ('+e.rows+' عميل)':''}${tot(e.tot)}`;
+    case 'bulk': return `<b>${e.n}</b> تغيير${e.dates?' على '+e.dates.map(escapeHtml).join('، '):''} <details><summary>عينة من التغييرات</summary>${ch.map(line).join('')}</details>`;
+    default: return ch.map(line).join('') + (e.n>ch.length ? `<div class="au-sub">… و${e.n-ch.length} كمان</div>` : '');
+  }
+}
+function auditDates(e){ return [e.date].concat(e.dates||[]).concat((e.ch||[]).map(c=>c.d)).filter(Boolean); }
+function renderAudit(main){
+  if(!state.user || state.user.role!=='admin') return;
+  if(!auditUI.loaded && !auditUI.loading) auditLoad();
+  const f = auditUI.f, q = norm(f.q||'');
+  const list = auditUI.items.filter(e=>{
+    if(f.kind && e.k!==f.kind) return false;
+    if(f.date && !auditDates(e).includes(f.date)) return false;
+    if(q){ const hay = norm([e.by, e.ctx, e.reason].concat((e.ch||[]).map(c=>c.cn||c.n||'')).join(' ')); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  const ae = document.activeElement, keepQ = ae && ae.id==='auQ';
+  main.innerHTML = `
+    <div class="topbar"><div><h1 class="display">سجل التعديلات</h1>
+      <div class="sub">مين غيّر إيه ومتى — السجل إضافة فقط (مفيش حد يقدر يعدّل فيه أو يمسحه) · الوقت من السيرفر</div></div></div>
+    <div class="toolbar">
+      <input id="auQ" class="sel-sm" style="min-width:200px" placeholder="ابحث باسم العميل أو العملية…" value="${escapeHtml(f.q)}">
+      <input type="date" id="auDate" class="sel-sm" value="${escapeHtml(f.date)}" title="يوم اتعدّل">
+      <select id="auKind" class="sel-sm"><option value="">كل الأنواع</option>${Object.keys(AUDIT_KINDS).map(k=>`<option value="${k}" ${f.kind===k?'selected':''}>${AUDIT_KINDS[k]}</option>`).join('')}</select>
+      <button class="btn sm" id="auReload">تحديث</button>
+    </div>
+    ${auditUI.err ? `<div class="preview-box warn" style="margin-bottom:12px">مقدرتش أقرا السجل: ${escapeHtml(auditUI.err)} — لو القواعد لسه قديمة انسخ القواعد الجديدة من «الإعدادات» وانشرها في Firebase.</div>` : ''}
+    ${!auditUI.loaded ? '<div class="card"><div class="empty">جاري تحميل السجل…</div></div>' : list.length ? `
+    <div class="card" style="overflow:auto"><table class="sum au-table"><thead><tr><th>الوقت</th><th>مين</th><th>النوع</th><th>التفاصيل</th></tr></thead><tbody>
+      ${list.map(e=>`<tr>
+        <td class="tnum" style="white-space:nowrap">${escapeHtml(new Date(e.at||e.clientAt||0).toLocaleString('ar-EG',{dateStyle:'short', timeStyle:'medium'}))}</td>
+        <td>${escapeHtml(e.by||'—')}</td>
+        <td><span class="pill ${auditKindClass(e.k)}">${escapeHtml(AUDIT_KINDS[e.k]||e.k||'')}</span>${e.ctx?`<div class="au-sub">${escapeHtml(e.ctx)}</div>`:''}</td>
+        <td class="au-det">${auditDetail(e)}</td></tr>`).join('')}
+    </tbody></table></div>
+    ${auditUI.items.length>=auditUI.limit ? '<div style="margin-top:12px"><button class="btn" id="auMore">تحميل أقدم</button></div>' : ''}`
+    : `<div class="card"><div class="empty"><div class="ico">📜</div>${auditUI.items.length ? 'مفيش نتائج بالفلتر ده.' : 'السجل فاضي لسه — أي تعديل جديد هيتسجّل هنا.'}</div></div>`}`;
+  if(keepQ){ const i = $('#auQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+  let _t = 0;
+  $('#auQ').oninput = e=>{ auditUI.f.q = e.target.value; clearTimeout(_t); _t = setTimeout(()=>renderAudit($('#main')), 200); };
+  $('#auDate').onchange = e=>{ auditUI.f.date = e.target.value; renderAudit($('#main')); };
+  $('#auKind').onchange = e=>{ auditUI.f.kind = e.target.value; renderAudit($('#main')); };
+  $('#auReload').onclick = ()=>{ auditUI.loaded = false; auditLoad(); renderAudit($('#main')); };
+  const mo = $('#auMore'); if(mo) mo.onclick = ()=>{ auditUI.limit += 300; auditUI.loaded = false; auditLoad(); renderAudit($('#main')); };
+}
+
+function dayLockBlock(label){
+  if(isLocked(state.day)){ toast('يوم '+state.day+' مقفول — افتحه الأول عشان '+label); return true; }
+  return false;
+}
+
+/* موبايل: التبويب النشط يظهر في شريط التبويبات */
+(function(){ const _r = renderRail; renderRail = function(){ _r(); try{ if(window.innerWidth<=760){ const a = document.querySelector('#rail .tab-btn.active'); if(a) a.scrollIntoView({inline:'center', block:'nearest'}); } }catch(e){} }; })();
+
 function boot(){
-  installGuard(); ensureSaveBar();
+  installGuard(); installAudit(); ensureSaveBar();
   const cfg = loadConfig() || DEFAULT_FIREBASE_CONFIG;
   render();
   connectFirebase(cfg);

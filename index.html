@@ -4128,15 +4128,19 @@ async function aiFileToB64(file){
   c.getContext('2d').drawImage(img,0,0,c.width,c.height);
   return c.toDataURL('image/jpeg',0.85).split(',')[1];
 }
+function aiStatus(s){ const b = document.querySelector('#aiRead'); if(b) b.textContent = s; }
 async function aiAsk(b64){
   const keys = aiS.keys, models = [...new Set([aiS.model, 'gemini-flash-latest', 'gemini-flash-lite-latest'])];
   let lastErr = '';
   for(let t=0; t<keys.length; t++){
     const i = (aiS.cur+t) % keys.length;
     let keyDead = false;
-    for(let mi=0; mi<models.length && !keyDead; mi++){
-      for(let attempt=0; attempt<3; attempt++){
-        const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 60000);
+    for(let round=0; round<2 && !keyDead; round++){
+      if(round===1) await new Promise(r=>setTimeout(r,3000));
+      for(let mi=0; mi<models.length && !keyDead; mi++){
+      { const attempt = 0;
+        aiStatus(`API ${i+1} · ${models[mi]}${round?' (محاولة تانية)':''}…`);
+        const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 35000);
         let resp;
         try{
           resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[mi])}:generateContent`, {
@@ -4146,8 +4150,8 @@ async function aiAsk(b64){
           });
         }catch(e){
           clearTimeout(tm);
-          lastErr = e && e.name==='AbortError' ? `API ${i+1}: ${models[mi]} اتأخر أكتر من 60 ثانية` : 'مفيش اتصال بالنت أو المتصفح منع الطلب';
-          break;   // الموديل اللي بعده
+          lastErr = e && e.name==='AbortError' ? `API ${i+1}: ${models[mi]} اتأخر أكتر من 35 ثانية` : 'مفيش اتصال بالنت أو المتصفح منع الطلب';
+          continue;   // الموديل اللي بعده
         }
         clearTimeout(tm);
         if(resp.ok){
@@ -4158,12 +4162,9 @@ async function aiAsk(b64){
         }
         let msg = ''; try{ msg = (await resp.json()).error.message||''; }catch(e){}
         lastErr = `API ${i+1} (${models[mi]}): ${resp.status} ${msg}`.slice(0,170);
-        if(resp.status===503 || resp.status===500){   // الموديل مشغول: استنى وجرّب تاني، وبعدها الموديل اللي بعده
-          if(attempt<2){ await new Promise(r=>setTimeout(r, 3000*(attempt+1))); continue; }
-          break;
-        }
-        if(resp.status===404){ break; }               // الموديل مش متاح: الموديل اللي بعده
-        keyDead = true; break;                        // 429 / 403 / 400: المفتاح اللي بعده
+        if(resp.status===503 || resp.status===500 || resp.status===404) continue;   // مشغول / مش متاح: الموديل اللي بعده فورًا
+        keyDead = true;                                                            // 429 / 403 / 400: المفتاح اللي بعده
+      }
       }
     }
   }

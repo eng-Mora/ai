@@ -4129,35 +4129,42 @@ async function aiFileToB64(file){
   return c.toDataURL('image/jpeg',0.85).split(',')[1];
 }
 async function aiAsk(b64){
-  const keys = aiS.keys; let lastErr = '';
+  const keys = aiS.keys, models = [...new Set([aiS.model, 'gemini-flash-latest', 'gemini-flash-lite-latest'])];
+  let lastErr = '';
   for(let t=0; t<keys.length; t++){
     const i = (aiS.cur+t) % keys.length;
-    const models = [...new Set([aiS.model, AI_DEF_MODEL, 'gemini-flash-latest'])];
-    for(let retry=0, mi=0; retry<2 && mi<models.length; retry++){
-      let resp; const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 60000);
-      try{
-        resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[mi])}:generateContent`, {
-          method:'POST', signal:ac.signal, headers:{'Content-Type':'application/json','x-goog-api-key':keys[i]},
-          body: JSON.stringify({contents:[{parts:[{text:AI_PROMPT},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
-            generationConfig:{temperature:0, responseMimeType:'application/json'}})
-        });
-      }catch(e){
+    let keyDead = false;
+    for(let mi=0; mi<models.length && !keyDead; mi++){
+      for(let attempt=0; attempt<3; attempt++){
+        const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 60000);
+        let resp;
+        try{
+          resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[mi])}:generateContent`, {
+            method:'POST', signal:ac.signal, headers:{'Content-Type':'application/json','x-goog-api-key':keys[i]},
+            body: JSON.stringify({contents:[{parts:[{text:AI_PROMPT},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
+              generationConfig:{temperature:0, responseMimeType:'application/json'}})
+          });
+        }catch(e){
+          clearTimeout(tm);
+          lastErr = e && e.name==='AbortError' ? `API ${i+1}: ${models[mi]} اتأخر أكتر من 60 ثانية` : 'مفيش اتصال بالنت أو المتصفح منع الطلب';
+          break;   // الموديل اللي بعده
+        }
         clearTimeout(tm);
-        if(e && e.name==='AbortError'){ lastErr = `API ${i+1}: الموديل ${models[mi]} اتأخر أكتر من 60 ثانية`; if(mi<models.length-1){ mi++; retry--; continue; } break; }
-        lastErr = 'مفيش اتصال بالنت أو المتصفح منع الطلب'; break;
+        if(resp.ok){
+          const j = await resp.json();
+          const txt = ((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||'').join('');
+          aiS.cur = i; aiS.model = models[mi];
+          return {txt, key:i+1, model:models[mi]};
+        }
+        let msg = ''; try{ msg = (await resp.json()).error.message||''; }catch(e){}
+        lastErr = `API ${i+1} (${models[mi]}): ${resp.status} ${msg}`.slice(0,170);
+        if(resp.status===503 || resp.status===500){   // الموديل مشغول: استنى وجرّب تاني، وبعدها الموديل اللي بعده
+          if(attempt<2){ await new Promise(r=>setTimeout(r, 3000*(attempt+1))); continue; }
+          break;
+        }
+        if(resp.status===404){ break; }               // الموديل مش متاح: الموديل اللي بعده
+        keyDead = true; break;                        // 429 / 403 / 400: المفتاح اللي بعده
       }
-      clearTimeout(tm);
-      if(resp.ok){
-        const j = await resp.json();
-        const txt = ((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||'').join('');
-        aiS.cur = i; aiS.model = models[mi];
-        return {txt, key:i+1};
-      }
-      let msg = ''; try{ msg = (await resp.json()).error.message||''; }catch(e){}
-      lastErr = `API ${i+1}: ${resp.status} ${msg}`.slice(0,160);
-      if(resp.status===404 && mi<models.length-1){ mi++; retry--; continue; }   // الموديل مش متاح: جرّب اللي بعده بنفس المفتاح
-      if(resp.status===503 && retry===0){ await new Promise(r=>setTimeout(r,2500)); continue; }   // الموديل مشغول: جرّب تاني
-      break;   // 429 / 403 / 400 (مفتاح غلط أو الليمت خلص) ← المفتاح اللي بعده
     }
   }
   throw new Error(lastErr || 'كل المفاتيح فشلت');

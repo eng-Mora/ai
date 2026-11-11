@@ -1,8 +1,0 @@
-venv/
-.venv/
-.idea/
-__pycache__/
-*.csv
-*.jpg
-*.jpeg
-*.png

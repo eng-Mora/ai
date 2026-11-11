@@ -4123,10 +4123,10 @@ const AI_PROMPT = `الصورة دي لقطة شاشة أو صورة موباي�
 async function aiFileToB64(file){
   const url = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
   const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
-  const sc = Math.min(1, 2000/Math.max(img.width,img.height)), c = document.createElement('canvas');
+  const sc = Math.min(1, 1600/Math.max(img.width,img.height)), c = document.createElement('canvas');
   c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
   c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-  return c.toDataURL('image/jpeg',0.9).split(',')[1];
+  return c.toDataURL('image/jpeg',0.85).split(',')[1];
 }
 async function aiAsk(b64){
   const keys = aiS.keys; let lastErr = '';
@@ -4134,14 +4134,19 @@ async function aiAsk(b64){
     const i = (aiS.cur+t) % keys.length;
     const models = [...new Set([aiS.model, AI_DEF_MODEL, 'gemini-flash-latest'])];
     for(let retry=0, mi=0; retry<2 && mi<models.length; retry++){
-      let resp;
+      let resp; const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 60000);
       try{
         resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[mi])}:generateContent`, {
-          method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':keys[i]},
+          method:'POST', signal:ac.signal, headers:{'Content-Type':'application/json','x-goog-api-key':keys[i]},
           body: JSON.stringify({contents:[{parts:[{text:AI_PROMPT},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
             generationConfig:{temperature:0, responseMimeType:'application/json'}})
         });
-      }catch(e){ lastErr = 'مفيش اتصال بالنت'; break; }
+      }catch(e){
+        clearTimeout(tm);
+        if(e && e.name==='AbortError'){ lastErr = `API ${i+1}: الموديل ${models[mi]} اتأخر أكتر من 60 ثانية`; if(mi<models.length-1){ mi++; retry--; continue; } break; }
+        lastErr = 'مفيش اتصال بالنت أو المتصفح منع الطلب'; break;
+      }
+      clearTimeout(tm);
       if(resp.ok){
         const j = await resp.json();
         const txt = ((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||'').join('');
@@ -4246,11 +4251,13 @@ async function aiRun(main){
   if(!keys.length) return toast('ضيف مفتاح API الأول من زرار «مفاتيح API»');
   aiS.busy = true; aiS.notes = []; aiS.rows = []; renderAI(main);
   const perImg = [], errs = [];
+  try{
   for(let i=0;i<aiS.files.length;i++){
     const btn = $('#aiRead'); if(btn) btn.textContent = `جاري قراءة الصورة ${i+1} من ${aiS.files.length}…`;
     try{ const r = await aiAsk(await aiFileToB64(aiS.files[i].file)); perImg.push({rows:aiParse(r.txt), key:r.key}); }
     catch(err){ errs.push(`صورة ${i+1}: ${err.message}`); perImg.push({rows:[], key:0}); }
   }
+  }catch(err){ errs.push('خطأ: '+(err&&err.message||err)); }
   /* الصور المتداخلة: نفس الصف (رقم+مبلغ+تاريخ) لو ظهر في أكتر من صورة بيتحسب مرة، والمتكرر جوه نفس الصورة بيفضل */
   const keyOf = r=>r.no+'|'+r.val+'|'+r.dt, best = new Map();
   perImg.forEach((p,pi)=>{ const c = {}; p.rows.forEach(r=>{ if(r.dt) c[keyOf(r)] = (c[keyOf(r)]||0)+1; });

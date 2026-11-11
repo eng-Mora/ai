@@ -4128,9 +4128,13 @@ async function aiFileToB64(file){
   c.getContext('2d').drawImage(img,0,0,c.width,c.height);
   return c.toDataURL('image/jpeg',0.85).split(',')[1];
 }
+/* ترتيب الموديلات من الأعلى للأقل — اللي ليمته اليومي يخلص بيتعلّم عليه وبيتسكّب لحد بكرة، فالطلبات اللي بعده ماتضيعش وقت عليه */
+const AI_CHAIN = ['gemini-3.8-flash','gemini-3.6-flash','gemini-3.5-flash-lite','gemini-flash-latest','gemini-flash-lite-latest'];
+function aiDeadGet(){ try{ const d = JSON.parse(localStorage.getItem('tq_ai_dead')||'{}'), now = Date.now(); Object.keys(d).forEach(k=>{ if(d[k]<now) delete d[k]; }); return d; }catch(e){ return {}; } }
+function aiDeadSet(k){ try{ const d = aiDeadGet(); d[k] = Date.now()+10*3600*1000; localStorage.setItem('tq_ai_dead', JSON.stringify(d)); }catch(e){} }
 function aiStatus(s){ const b = document.querySelector('#aiRead'); if(b) b.textContent = s; }
 async function aiAsk(b64){
-  const keys = aiS.keys, models = [...new Set([aiS.model, 'gemini-flash-latest', 'gemini-flash-lite-latest'])];
+  const keys = aiS.keys, models = [...new Set([aiS.model, ...AI_CHAIN])];
   let lastErr = '';
   for(let t=0; t<keys.length; t++){
     const i = (aiS.cur+t) % keys.length;
@@ -4138,7 +4142,7 @@ async function aiAsk(b64){
     for(let round=0; round<2 && !keyDead; round++){
       if(round===1) await new Promise(r=>setTimeout(r,3000));
       for(let mi=0; mi<models.length && !keyDead; mi++){
-      { const attempt = 0;
+      { if(aiDeadGet()[i+'|'+models[mi]]) continue;
         aiStatus(`API ${i+1} · ${models[mi]}${round?' (محاولة تانية)':''}…`);
         const ac = new AbortController(), tm = setTimeout(()=>ac.abort(), 35000);
         let resp;
@@ -4157,13 +4161,14 @@ async function aiAsk(b64){
         if(resp.ok){
           const j = await resp.json();
           const txt = ((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||'').join('');
-          aiS.cur = i; aiS.model = models[mi];
+          aiS.cur = i;
           return {txt, key:i+1, model:models[mi]};
         }
         let msg = ''; try{ msg = (await resp.json()).error.message||''; }catch(e){}
         lastErr = `API ${i+1} (${models[mi]}): ${resp.status} ${msg}`.slice(0,170);
-        if(resp.status===503 || resp.status===500 || resp.status===404) continue;   // مشغول / مش متاح: الموديل اللي بعده فورًا
-        keyDead = true;                                                            // 429 / 403 / 400: المفتاح اللي بعده
+        if(resp.status===429 && /per ?day|daily|RPD|PerDay/i.test(msg)) aiDeadSet(i+'|'+models[mi]);   // الليمت اليومي خلص: نتخطّاه لحد بكرة
+        if([503,500,404,429].includes(resp.status)) continue;   // مشغول / مش متاح / الليمت اليومي للموديل ده خلص: الموديل اللي بعده فورًا
+        keyDead = true;                                         // 403 / 400 (مفتاح غلط): المفتاح اللي بعده
       }
       }
     }
@@ -4262,7 +4267,7 @@ async function aiRun(main){
   try{
   for(let i=0;i<aiS.files.length;i++){
     const btn = $('#aiRead'); if(btn) btn.textContent = `جاري قراءة الصورة ${i+1} من ${aiS.files.length}…`;
-    try{ const r = await aiAsk(await aiFileToB64(aiS.files[i].file)); perImg.push({rows:aiParse(r.txt), key:r.key}); }
+    try{ const r = await aiAsk(await aiFileToB64(aiS.files[i].file)); perImg.push({rows:aiParse(r.txt), key:r.key, model:r.model}); }
     catch(err){ errs.push(`صورة ${i+1}: ${err.message}`); perImg.push({rows:[], key:0}); }
   }
   }catch(err){ errs.push('خطأ: '+(err&&err.message||err)); }
@@ -4273,7 +4278,7 @@ async function aiRun(main){
   let dropped = 0; const rows = [];
   perImg.forEach((p,pi)=>p.rows.forEach(r=>{ if(r.dt && best.get(keyOf(r)).pi!==pi){ dropped++; return; } rows.push(r); }));
   aiS.rows = rows;
-  aiS.notes = [{html:`اتقرا <b>${rows.length}</b> صف من ${aiS.files.length} صورة${perImg.some(p=>p.key)?` (مفتاح API ${[...new Set(perImg.map(p=>p.key).filter(Boolean))].join(' و ')})`:''}.`}];
+  aiS.notes = [{html:`اتقرا <b>${rows.length}</b> صف من ${aiS.files.length} صورة${perImg.some(p=>p.key)?` (مفتاح API ${[...new Set(perImg.map(p=>p.key).filter(Boolean))].join(' و ')} · ${[...new Set(perImg.map(p=>p.model).filter(Boolean))].join(' و ')})`:''}.`}];
   if(dropped) aiS.notes.push({warn:true, html:`${dropped} صف مكرر بين الصور المتداخلة اتشال.`});
   errs.forEach(e=>aiS.notes.push({warn:true, html:escapeHtml(e)}));
   aiS.notes.push({warn:true, html:'راجع الأرقام كويس قبل التأكيد — القراءة من صورة ممكن تغلط في رقم.'});

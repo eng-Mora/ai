@@ -274,12 +274,15 @@ function renderCustomers() {
         <td><span class="tag ${esc(c.type)}">${c.type === 'shared' ? 'مشترك' : 'مخصص'}</span></td>
         <td>${c.type === 'assigned' ? esc(collectorName(c.assignedTo)) : '-'}</td>
         <td><b>${num(c.debt)}</b></td>
+        <td>${typeof c.lat === 'number' && typeof c.lng === 'number'
+          ? `<a class="loc" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${c.lat},${c.lng}">محدد ✓</a>`
+          : '<span class="muted">غير محدد</span>'}</td>
         <td>
           <button class="btn small" data-act="edit" data-id="${esc(c.id)}">تعديل</button>
           <button class="btn small bad" data-act="del" data-id="${esc(c.id)}">حذف</button>
         </td></tr>`
       )
-      .join('') || '<tr><td class="empty" colspan="6">لا يوجد عملاء. أضف عميلًا أو استورد ملف CSV.</td></tr>';
+      .join('') || '<tr><td class="empty" colspan="7">لا يوجد عملاء. أضف عميلًا أو استورد ملف CSV.</td></tr>';
 }
 $('custSearch').addEventListener('input', renderCustomers);
 $('custTypeFilter').addEventListener('change', renderCustomers);
@@ -315,7 +318,16 @@ function openCustomerForm(id) {
        </select></div>
      <div class="field" id="fAssignWrap"><label>المحصل المخصص</label>
        <select id="fAssigned">${collectorOptions(c.assignedTo)}</select></div>
-     <div class="field"><label>المديونية</label><input id="fDebt" type="number" step="0.01" value="${Number(c.debt || 0)}"></div>`,
+     <div class="field"><label>المديونية</label><input id="fDebt" type="number" step="0.01" value="${Number(c.debt || 0)}"></div>
+     <div class="field"><label>موقع العميل — اضغط على الخريطة أو اسحب الدبوس</label>
+       <div id="pickMap" class="pick-map"></div></div>
+     <div class="field"><label>أو الصق إحداثيات / رابط Google Maps الطويل (اختياري)</label>
+       <input id="fPaste" dir="ltr" placeholder="30.0444, 31.2357"></div>
+     <div class="row2">
+       <input id="fLat" dir="ltr" placeholder="خط العرض" value="${typeof c.lat === 'number' ? c.lat : ''}">
+       <input id="fLng" dir="ltr" placeholder="خط الطول" value="${typeof c.lng === 'number' ? c.lng : ''}">
+       <button class="btn small" id="clearLoc" type="button">مسح</button>
+     </div>`,
     async () => {
       const name = $('fName').value.trim();
       const type = $('fType').value;
@@ -324,12 +336,25 @@ function openCustomerForm(id) {
       if (!name) return toast('أدخل اسم العميل');
       if (isNaN(debt)) return toast('المديونية غير صحيحة');
       if (type === 'assigned' && !assignedTo) return toast('اختر المحصل المخصص');
+      let lat = null;
+      let lng = null;
+      const latS = $('fLat').value.trim();
+      const lngS = $('fLng').value.trim();
+      if (latS || lngS) {
+        lat = parseFloat(latS);
+        lng = parseFloat(lngS);
+        if (isNaN(lat) || isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return toast('إحداثيات الموقع غير صحيحة');
+        }
+      }
       const data = {
         name,
         phone: $('fPhone').value.trim(),
         type,
         assignedTo: type === 'assigned' ? assignedTo : null,
         debt,
+        lat,
+        lng,
         updatedAt: firebase.database.ServerValue.TIMESTAMP,
       };
       if (id) await db.ref('customers/' + id).update(data);
@@ -341,6 +366,7 @@ function openCustomerForm(id) {
   const toggle = () => ($('fAssignWrap').style.display = $('fType').value === 'assigned' ? '' : 'none');
   $('fType').addEventListener('change', toggle);
   toggle();
+  initPicker(c.lat, c.lng);
 }
 
 async function deleteCustomer(id) {
@@ -358,7 +384,8 @@ function openImportForm() {
   openModal(
     'استيراد عملاء',
     `<p class="muted" style="margin-top:0">الصق البيانات، سطر لكل عميل، الأعمدة مفصولة بفاصلة:<br>
-     <b>الاسم, الهاتف, النوع, كود المحصل, المديونية</b><br>
+     <b>الاسم, الهاتف, النوع, كود المحصل, المديونية, خط العرض, خط الطول</b><br>
+     (خط العرض والطول اختياريان)<br>
      النوع: assigned أو shared (أو مخصص / مشترك). كود المحصل مطلوب فقط للمخصص.</p>
      <div class="field"><textarea id="fCsv" rows="9" placeholder="أحمد علي, 01012345678, assigned, c01, 1500&#10;محمود حسن, , shared, , 800"></textarea></div>`,
     async () => {
@@ -370,7 +397,10 @@ function openImportForm() {
       lines.forEach((line, i) => {
         const p = line.split(',').map((x) => x.trim());
         if (i === 0 && /الاسم|name/i.test(p[0])) return; // صف العناوين
-        const [name, phone, typeRaw, code, debtRaw] = p;
+        const [name, phone, typeRaw, code, debtRaw, latRaw, lngRaw] = p;
+        const la = parseFloat(latRaw);
+        const ln = parseFloat(lngRaw);
+        const hasLoc = !isNaN(la) && !isNaN(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180;
         const type = /shared|مشترك/i.test(typeRaw || '') ? 'shared' : 'assigned';
         const debt = parseFloat(debtRaw);
         const assignedTo = type === 'assigned' ? byCode[String(code || '').toLowerCase()] : null;
@@ -383,6 +413,8 @@ function openImportForm() {
           type,
           assignedTo: assignedTo || null,
           debt,
+          lat: hasLoc ? la : null,
+          lng: hasLoc ? ln : null,
           updatedAt: Date.now(),
         };
       });
@@ -457,6 +489,11 @@ function openModal(title, bodyHtml, onSave) {
   $('modal').classList.remove('hidden');
 }
 function closeModal() {
+  if (pickMap) {
+    pickMap.remove();
+    pickMap = null;
+    pickMarker = null;
+  }
   $('modal').classList.add('hidden');
   modalSaveHandler = null;
 }
@@ -564,3 +601,90 @@ $('mapBody').addEventListener('click', (e) => {
   m.openPopup();
   $('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
+
+// ---------- اختيار موقع العميل (خريطة داخل نافذة العميل) ----------
+let pickMap = null;
+let pickMarker = null;
+
+// يقبل: "30.04, 31.23" أو رابط Google Maps طويل (@lat,lng أو q=lat,lng أو !3d..!4d..)
+function parseCoords(text) {
+  const s = String(text || '');
+  const m =
+    s.match(/@(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/) ||
+    s.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/) ||
+    s.match(/[?&](?:q|ll|query)=(-?\d+\.?\d*)(?:,|%2C)\s*(-?\d+\.?\d*)/) ||
+    s.match(/^\s*(-?\d+\.?\d*)\s*[,،\s]\s*(-?\d+\.?\d*)\s*$/);
+  if (!m) return null;
+  const la = parseFloat(m[1]);
+  const ln = parseFloat(m[2]);
+  if (isNaN(la) || isNaN(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) return null;
+  return [la, ln];
+}
+
+function defaultPickCenter() {
+  const withLoc = entries(state.customers).find((c) => typeof c.lat === 'number' && typeof c.lng === 'number');
+  if (withLoc) return [withLoc.lat, withLoc.lng];
+  return [30.0444, 31.2357]; // القاهرة
+}
+
+function initPicker(lat, lng) {
+  if (typeof L === 'undefined') return; // Leaflet لم يتحمل (لا يوجد إنترنت)
+  if (pickMap) {
+    pickMap.remove();
+    pickMap = null;
+    pickMarker = null;
+  }
+  const has = typeof lat === 'number' && typeof lng === 'number';
+  pickMap = L.map('pickMap').setView(has ? [lat, lng] : defaultPickCenter(), has ? 16 : 11);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap',
+  }).addTo(pickMap);
+
+  const setInputs = (la, ln) => {
+    $('fLat').value = Number(la).toFixed(6);
+    $('fLng').value = Number(ln).toFixed(6);
+  };
+  const setPoint = (la, ln, fly) => {
+    setInputs(la, ln);
+    if (!pickMarker) {
+      pickMarker = L.marker([la, ln], { draggable: true }).addTo(pickMap);
+      pickMarker.on('dragend', () => {
+        const p = pickMarker.getLatLng();
+        setInputs(p.lat, p.lng);
+      });
+    } else {
+      pickMarker.setLatLng([la, ln]);
+    }
+    if (fly) pickMap.setView([la, ln], Math.max(pickMap.getZoom(), 16));
+  };
+
+  pickMap.on('click', (e) => setPoint(e.latlng.lat, e.latlng.lng));
+  if (has) setPoint(lat, lng);
+
+  // لصق إحداثيات أو رابط
+  $('fPaste').addEventListener('input', () => {
+    const p = parseCoords($('fPaste').value);
+    if (p) setPoint(p[0], p[1], true);
+  });
+  // تعديل الإحداثيات يدويًا
+  const fromInputs = () => {
+    const la = parseFloat($('fLat').value);
+    const ln = parseFloat($('fLng').value);
+    if (!isNaN(la) && !isNaN(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180) setPoint(la, ln, true);
+  };
+  $('fLat').addEventListener('change', fromInputs);
+  $('fLng').addEventListener('change', fromInputs);
+  // مسح الموقع
+  $('clearLoc').addEventListener('click', () => {
+    $('fLat').value = '';
+    $('fLng').value = '';
+    $('fPaste').value = '';
+    if (pickMarker) {
+      pickMap.removeLayer(pickMarker);
+      pickMarker = null;
+    }
+  });
+
+  setTimeout(() => pickMap && pickMap.invalidateSize(), 100);
+}
